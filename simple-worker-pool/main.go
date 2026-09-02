@@ -1,39 +1,75 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"math/rand"
+	"sync"
 	"time"
 )
 
-const ( 
-	jobsCount = 30
-	workersCount = 5
+const(
+	maxJobs = 30
+	maxWorkers = 5
 )
 
-func worker(id int, jobs <-chan int, result chan<- int) {
-	for j := range jobs {
-		fmt.Printf("Worker: %d, start with job: %d\n", id, j)
-		time.Sleep(500 * time.Millisecond)
-		fmt.Printf("Worker: %d, end with job: %d\n", id, j)
-		result <- rand.Intn(j + 100)
+func worker(ctx context.Context, id int, jobs <-chan int, results chan<- int) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case v, ok := <-jobs:
+			if !ok {
+				return
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(500 * time.Millisecond):
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case results <- v * 3:
+				fmt.Printf("Worker %d passed job %d\n", id, v)
+			}
+
+		}
 	}
 }
 
 func main() {
-	jobs := make(chan int, jobsCount)
-	results := make(chan int, jobsCount)
+	jobs := make(chan int, maxJobs)
+	results := make(chan int, maxJobs)
 
-	for w := range workersCount {
-		go worker(w, jobs, results)
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	var wg sync.WaitGroup
+	wg.Add(maxWorkers)
+	for w := range maxWorkers {
+		go func() {
+			defer wg.Done()
+			
+			worker(ctx, w, jobs, results)
+		}()
 	}
 
-	for j := range jobsCount {
-		jobs <- j
+	go func () {
+		wg.Wait()
+		close(results)
+	}()
+
+l:	
+	for j := range maxJobs {
+		select {
+		case <-ctx.Done():
+			break l
+		case jobs <- j:
+		}
 	}
 	close(jobs)
 
-	for range jobsCount {
-		<-results
+	for r := range results {
+		fmt.Println("got:", r)
 	}
 }
