@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-const(
-	maxJobs = 30
+const (
+	maxJobs = 50
 	maxWorkers = 5
 )
 
@@ -24,37 +24,36 @@ func worker(ctx context.Context, id int, jobs <-chan int, results chan<- int) {
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(500 * time.Millisecond):
+			case <-time.After(900 * time.Millisecond):
 			}
 			select {
 			case <-ctx.Done():
 				return
 			case results <- v * 3:
-				fmt.Printf("Worker %d passed job %d\n", id, v)
+				fmt.Printf("worker %d passed the job %d\n", id, v)
 			}
-
 		}
 	}
 }
 
 func main() {
-	jobs := make(chan int, maxJobs)
+	jobs 	:= make(chan int, maxJobs)
 	results := make(chan int, maxJobs)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	start 	:= time.Now()
+	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
 	defer cancel()
-
+	
 	var wg sync.WaitGroup
 	wg.Add(maxWorkers)
+
 	for w := range maxWorkers {
 		go func() {
 			defer wg.Done()
-			
 			worker(ctx, w, jobs, results)
 		}()
 	}
 
-	go func () {
+	go func() {
 		wg.Wait()
 		close(results)
 	}()
@@ -72,4 +71,6 @@ l:
 	for r := range results {
 		fmt.Println("got:", r)
 	}
+
+	fmt.Println("Score:", time.Since(start))
 }
