@@ -3,14 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"time"
 )
 
-func writter(ctx context.Context) <-chan int {
+func generator(ctx context.Context) <-chan int {
 	ch := make(chan int)
 	go func() {
 		defer close(ch)
+		
 		for i := range 10 {
 			select {
 			case <-ctx.Done():
@@ -19,18 +19,20 @@ func writter(ctx context.Context) <-chan int {
 			}
 		}
 	}()
+
 	return ch
 }
 
-func doubler(ctx context.Context, input <-chan int) <-chan int {
+func doubler(ctx context.Context, input <-chan int)<-chan int {
 	ch := make(chan int)
 
 	go func() {
 		defer close(ch)
+
 		for {
 			select {
 			case <-ctx.Done():
-				return 
+				return
 			case v, ok := <- input:
 				if !ok {
 					return
@@ -38,12 +40,12 @@ func doubler(ctx context.Context, input <-chan int) <-chan int {
 				select {
 				case <-ctx.Done():
 					return
-				case <-time.After(time.Duration(rand.Intn(300)) * time.Millisecond):
+				case <-time.After(300 * time.Millisecond):
 				}
 				select {
 				case <-ctx.Done():
 					return
-				case ch <- v*2:
+				case ch <- v * 2:
 				}
 			}
 		}
@@ -55,7 +57,7 @@ func doubler(ctx context.Context, input <-chan int) <-chan int {
 func reader(ctx context.Context, input <-chan int) {
 	for {
 		select {
-		case <-ctx.Done():
+		case <- ctx.Done():
 			return
 		case v, ok := <- input:
 			if !ok {
@@ -67,8 +69,10 @@ func reader(ctx context.Context, input <-chan int) {
 }
 
 func main() {
+	start := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
 	defer cancel()
 
-	reader(ctx, doubler(ctx, writter(ctx)))
+	reader(ctx, doubler(ctx, generator(ctx)))
+	fmt.Println("duration:", time.Since(start))
 }
