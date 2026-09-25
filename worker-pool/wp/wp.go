@@ -36,7 +36,7 @@ func New[Data any](handler func(int, Data)) *Pool[Data] {
 
 func (p *Pool[Data]) Create() {
 	for _, w := range wokers {
-		p.pool <-w
+		p.pool <- w
 	}
 }
 

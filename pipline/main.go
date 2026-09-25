@@ -7,33 +7,30 @@ import (
 )
 
 func generator(ctx context.Context) <-chan int {
-	ch := make(chan int)
+	out := make(chan int)
+
 	go func() {
-		defer close(ch)
-		
+		defer close(out)
+
 		for i := range 10 {
-			select {
-			case <-ctx.Done():
-				return
-			case ch <- i + 1:
-			}
+			out <- i + 1
 		}
 	}()
 
-	return ch
+	return out
 }
 
-func doubler(ctx context.Context, input <-chan int)<-chan int {
-	ch := make(chan int)
+func doubler(ctx context.Context, input <-chan int) <-chan int {
+	out := make(chan int)
 
 	go func() {
-		defer close(ch)
+		defer close(out)
 
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case v, ok := <- input:
+			case v, ok := <-input:
 				if !ok {
 					return
 				}
@@ -45,21 +42,21 @@ func doubler(ctx context.Context, input <-chan int)<-chan int {
 				select {
 				case <-ctx.Done():
 					return
-				case ch <- v * 2:
+				case out <- v * 2:
 				}
 			}
 		}
 	}()
 
-	return ch
+	return out
 }
 
 func reader(ctx context.Context, input <-chan int) {
 	for {
 		select {
-		case <- ctx.Done():
+		case <-ctx.Done():
 			return
-		case v, ok := <- input:
+		case v, ok := <-input:
 			if !ok {
 				return
 			}
@@ -70,9 +67,10 @@ func reader(ctx context.Context, input <-chan int) {
 
 func main() {
 	start := time.Now()
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(),5 * time.Second)
 	defer cancel()
 
 	reader(ctx, doubler(ctx, generator(ctx)))
+
 	fmt.Println("duration:", time.Since(start))
 }
