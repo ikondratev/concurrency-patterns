@@ -1,0 +1,7 @@
+{
+    "server": {
+        "host": "localhost",
+        "port": 9191,
+        "timeout_shutdown_second": 11
+    }
+}
