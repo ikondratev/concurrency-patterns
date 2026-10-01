@@ -15,14 +15,9 @@ import (
 	"github.com/kilia/http-example/internal/settings"
 )
 
-type Server interface {
-	Start(chan<- error)
-	Stop(context.Context)error
-}
-
 type Application struct {
 	settings *settings.Settings
-	server Server
+	server http.Server
 }
 
 func New(env string) (*Application, error) {
@@ -49,7 +44,7 @@ func (a *Application) Run() error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	select {
-	case err := <-chErr:
+	case err := <- chErr:
 		if !errors.Is(err, netHttp.ErrServerClosed) {
 			return err
 		}
@@ -61,7 +56,7 @@ func (a *Application) Run() error {
 		context.Background(), 
 		time.Duration(a.settings.Server.ShutdownTimeoutSecond) * time.Second)
 	defer cancel()
-
+	
 	if err := a.server.Stop(ctx); err != nil {
 		return err
 	}
