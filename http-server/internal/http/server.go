@@ -10,11 +10,22 @@ import (
 	"github.com/kilia/http-example/internal/settings"
 )
 
+type Server interface {
+	Start(chan<- error)
+	Stop(context.Context)error
+}
+
 type HttpServer struct {
 	engine *netHttp.Server
 }
 
 func (s *HttpServer) Start(chErr chan<- error) {
+	defer func() {
+		if r := recover(); r != nil {
+			chErr <- fmt.Errorf("Server error:%v", r)
+		}
+	}()
+
 	fmt.Printf("Server started:%s\n", s.engine.Addr)
 	chErr <- s.engine.ListenAndServe()
 }
