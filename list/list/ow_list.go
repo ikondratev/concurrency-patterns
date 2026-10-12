@@ -6,7 +6,7 @@ type OWList[T any] struct {
 }
 
 func NewOwList[T any](data T) *OWList[T] {
-	return &OWList[T] {
+	return &OWList[T]{
 		data: data,
 	}
 }
@@ -19,6 +19,7 @@ func (l *OWList[T]) Next() Forward[T] {
 	if l == nil || l.next == nil {
 		return nil
 	}
+
 	return l.next
 }
 
@@ -27,7 +28,8 @@ func (l *OWList[T]) Push(data T) {
 	for node.next != nil {
 		node = node.next
 	}
-	node.next = &OWList[T] {
+
+	node.next = &OWList[T]{
 		data: data,
 	}
 }
@@ -41,13 +43,12 @@ func (l *OWList[T]) PushPop(data T) *OWList[T] {
 
 func (l *OWList[T]) Reverse() *OWList[T] {
 	var head *OWList[T]
-	node := l
+	node := l 
 	for node != nil {
 		next := node.next
 		node.next = head
 		head = node
 		node = next
 	}
-
 	return head
 }

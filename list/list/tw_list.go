@@ -7,7 +7,7 @@ type TWList[T any] struct {
 }
 
 func NewTwList[T any](data T) *TWList[T] {
-	return &TWList[T]{
+	return &TWList[T] {
 		data: data,
 	}
 }
@@ -34,7 +34,7 @@ func (l *TWList[T]) Push(data T) {
 		data: data,
 		prev: node,
 	}
-} 
+}
 
 func (l *TWList[T]) PushPop(data T) *TWList[T] {
 	var head *TWList[T]
@@ -47,6 +47,7 @@ func (l *TWList[T]) PushPop(data T) *TWList[T] {
 		data: data,
 		next: node,
 	}
+
 	if node != nil {
 		node.prev = head
 	}
@@ -63,7 +64,5 @@ func (l *TWList[T]) Reverse() *TWList[T] {
 		head = node
 		node = next
 	}
-
 	return head
 }
-
